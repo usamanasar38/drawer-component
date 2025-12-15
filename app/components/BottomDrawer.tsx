@@ -16,6 +16,7 @@ export default function BottomDrawer({
   const [internalHeight, setInternalHeight] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [gestureState, setGestureState] = useState<"unknown" | "vertical" | "horizontal">("unknown");
+  const [isContentScrollable, setIsContentScrollable] = useState(true);
   const drawerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
@@ -68,6 +69,7 @@ export default function BottomDrawer({
     
     // Handle area always allows dragging
     if (isHandleArea) {
+      e.preventDefault();
       pointerIdRef.current = e.pointerId;
       startXRef.current = e.clientX;
       startYRef.current = e.clientY;
@@ -83,7 +85,8 @@ export default function BottomDrawer({
     
     // At first snap point, allow dragging from content area (but only if scrolled to top)
     if (isAtFirstSnapPoint && isContentArea) {
-      if (contentRef.current && contentRef.current.scrollTop > 0) {
+      const currentScrollTop = contentRef.current?.scrollTop || 0;
+      if (currentScrollTop > 0) {
         return;
       }
       
@@ -92,7 +95,7 @@ export default function BottomDrawer({
       startXRef.current = e.clientX;
       startYRef.current = e.clientY;
       startHeightRef.current = height;
-      startScrollTopRef.current = contentRef.current?.scrollTop || 0;
+      startScrollTopRef.current = currentScrollTop;
       setGestureState("unknown");
       
       if (drawerRef.current) {
@@ -127,9 +130,11 @@ export default function BottomDrawer({
           pointerIdRef.current = null;
           return;
         } else {
-          // Vertical gesture - start dragging
+          // Vertical gesture - start dragging and prevent scroll
           setGestureState("vertical");
           setIsDragging(true);
+          setIsContentScrollable(false);
+          e.preventDefault();
         }
       } else {
         // Haven't moved enough yet, don't do anything
@@ -143,6 +148,9 @@ export default function BottomDrawer({
     }
 
     if (!isDragging) return;
+
+    // Prevent default scroll behavior when dragging vertically
+    e.preventDefault();
 
     const invertedDeltaY = startYRef.current - e.clientY;
     
@@ -164,6 +172,7 @@ export default function BottomDrawer({
     const wasDragging = isDragging;
     setIsDragging(false);
     setGestureState("unknown");
+    setIsContentScrollable(true);
     pointerIdRef.current = null;
 
     if (!wasDragging) {
@@ -205,6 +214,7 @@ export default function BottomDrawer({
   const handlePointerCancel = (e: React.PointerEvent) => {
     setIsDragging(false);
     setGestureState("unknown");
+    setIsContentScrollable(true);
     pointerIdRef.current = null;
     
     if (drawerRef.current) {
@@ -263,10 +273,11 @@ export default function BottomDrawer({
         {/* Content */}
         <div 
           ref={contentRef}
-          className={`drawer-content px-6 overflow-y-auto flex-1 ${
+          className={`drawer-content px-6 flex-1 ${
             isAtFirstSnapPoint ? "pb-20" : "pb-6"
           } ${isAtFirstSnapPoint ? "cursor-grab active:cursor-grabbing" : ""}`}
           style={{
+            overflowY: isContentScrollable ? "auto" : "hidden",
             overflowX: "auto",
           }}
         >
