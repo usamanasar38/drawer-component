@@ -15,11 +15,14 @@ export default function BottomDrawer({
 }: BottomDrawerProps) {
   const [internalHeight, setInternalHeight] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [gestureState, setGestureState] = useState<"unknown" | "vertical" | "horizontal">("unknown");
   const drawerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startHeightRef = useRef(50);
   const startScrollTopRef = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
   
   // Reset height to 50 when drawer is not open
   const height = isOpen ? internalHeight : 50;
@@ -28,6 +31,7 @@ export default function BottomDrawer({
   const SNAP_POINTS = [50, 80, 100];
   const CLOSE_THRESHOLD = 30;
   const SNAP_THRESHOLD = 10;
+  const GESTURE_THRESHOLD = 10; // pixels to determine gesture direction
   const FIRST_SNAP_POINT = SNAP_POINTS[0];
   
   // Check if we're at the first/default snap point
@@ -62,48 +66,116 @@ export default function BottomDrawer({
     const isHandleArea = target.closest(".drawer-handle") || target.closest(".drawer-header");
     const isContentArea = target.closest(".drawer-content");
     
+    // Handle area always allows dragging
+    if (isHandleArea) {
+      pointerIdRef.current = e.pointerId;
+      startXRef.current = e.clientX;
+      startYRef.current = e.clientY;
+      startHeightRef.current = height;
+      startScrollTopRef.current = contentRef.current?.scrollTop || 0;
+      setGestureState("unknown");
+      
+      if (drawerRef.current) {
+        drawerRef.current.setPointerCapture(e.pointerId);
+      }
+      return;
+    }
+    
     // At first snap point, allow dragging from content area (but only if scrolled to top)
     if (isAtFirstSnapPoint && isContentArea) {
       if (contentRef.current && contentRef.current.scrollTop > 0) {
         return;
       }
-    } else if (!isHandleArea && !isContentArea) {
-      return;
-    } else if (!isAtFirstSnapPoint && !isHandleArea) {
+      
+      // Don't immediately start dragging, wait to determine gesture direction
+      pointerIdRef.current = e.pointerId;
+      startXRef.current = e.clientX;
+      startYRef.current = e.clientY;
+      startHeightRef.current = height;
+      startScrollTopRef.current = contentRef.current?.scrollTop || 0;
+      setGestureState("unknown");
+      
+      if (drawerRef.current) {
+        drawerRef.current.setPointerCapture(e.pointerId);
+      }
       return;
     }
-
-    setIsDragging(true);
-    startYRef.current = e.clientY;
-    startHeightRef.current = height;
-    startScrollTopRef.current = contentRef.current?.scrollTop || 0;
     
-    if (drawerRef.current) {
-      drawerRef.current.setPointerCapture(e.pointerId);
+    // Not at first snap point, only handle area can drag
+    if (!isAtFirstSnapPoint && !isHandleArea) {
+      return;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    if (pointerIdRef.current === null) return;
+
+    const deltaX = Math.abs(e.clientX - startXRef.current);
+    const deltaY = e.clientY - startYRef.current;
+    const absDeltaY = Math.abs(deltaY);
+
+    // Determine gesture direction if unknown
+    if (gestureState === "unknown") {
+      // Need to move at least GESTURE_THRESHOLD pixels to determine direction
+      if (deltaX > GESTURE_THRESHOLD || absDeltaY > GESTURE_THRESHOLD) {
+        if (deltaX > absDeltaY) {
+          // Horizontal gesture - allow scrolling
+          setGestureState("horizontal");
+          if (drawerRef.current && pointerIdRef.current !== null) {
+            drawerRef.current.releasePointerCapture(pointerIdRef.current);
+          }
+          pointerIdRef.current = null;
+          return;
+        } else {
+          // Vertical gesture - start dragging
+          setGestureState("vertical");
+          setIsDragging(true);
+        }
+      } else {
+        // Haven't moved enough yet, don't do anything
+        return;
+      }
+    }
+
+    // Only drag if this is a vertical gesture
+    if (gestureState === "horizontal") {
+      return;
+    }
+
     if (!isDragging) return;
 
-    const deltaY = startYRef.current - e.clientY;
+    const invertedDeltaY = startYRef.current - e.clientY;
     
     // At first snap point with content area drag, only drag up
     if (isAtFirstSnapPoint && startScrollTopRef.current === 0) {
-      if (deltaY < 0) return;
+      if (invertedDeltaY < 0) return;
     }
 
     const windowHeight = window.innerHeight;
-    const deltaPercentage = (deltaY / windowHeight) * 100;
+    const deltaPercentage = (invertedDeltaY / windowHeight) * 100;
     const newHeight = Math.max(0, Math.min(100, startHeightRef.current + deltaPercentage));
 
     setInternalHeight(newHeight);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDragging) return;
+    if (pointerIdRef.current === null && !isDragging) return;
 
+    const wasDragging = isDragging;
     setIsDragging(false);
+    setGestureState("unknown");
+    pointerIdRef.current = null;
+
+    if (!wasDragging) {
+      if (drawerRef.current) {
+        try {
+          drawerRef.current.releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore errors if pointer capture is already released
+        }
+      }
+      return;
+    }
 
     const deltaY = startYRef.current - e.clientY;
     const windowHeight = window.innerHeight;
@@ -122,7 +194,25 @@ export default function BottomDrawer({
     }
 
     if (drawerRef.current) {
-      drawerRef.current.releasePointerCapture(e.pointerId);
+      try {
+        drawerRef.current.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore errors if pointer capture is already released
+      }
+    }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    setGestureState("unknown");
+    pointerIdRef.current = null;
+    
+    if (drawerRef.current) {
+      try {
+        drawerRef.current.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore errors if pointer capture is already released
+      }
     }
   };
 
@@ -151,17 +241,17 @@ export default function BottomDrawer({
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 shadow-2xl z-50 flex flex-col ${
-          isAtFirstSnapPoint ? "rounded-t-3xl" : "rounded-t-3xl"
-        } ${isDragging ? "" : "transition-all duration-300 ease-out"}`}
+        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 shadow-2xl z-50 flex flex-col rounded-t-3xl ${
+          isDragging ? "" : "transition-all duration-300 ease-out"
+        }`}
         style={{
           height: `${height}vh`,
-          touchAction: "pan-x",
+          touchAction: "none",
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
       >
         {/* Handle at top when NOT at first snap point */}
         {!isAtFirstSnapPoint && (
@@ -176,6 +266,9 @@ export default function BottomDrawer({
           className={`drawer-content px-6 overflow-y-auto flex-1 ${
             isAtFirstSnapPoint ? "pb-20" : "pb-6"
           } ${isAtFirstSnapPoint ? "cursor-grab active:cursor-grabbing" : ""}`}
+          style={{
+            overflowX: "auto",
+          }}
         >
           {children}
         </div>
