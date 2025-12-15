@@ -1,4 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import BottomDrawer from "./components/BottomDrawer";
+
 export default function Home() {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-8 py-32 px-16 bg-white dark:bg-black">
@@ -38,12 +45,53 @@ export default function Home() {
           <path d="M53.2441 19.1264C54.0064 19.1264 55.2766 19.3724 55.2766 21.2718V24.5105C55.2766 24.9204 55.3275 25.3167 55.8991 25.3167C55.9499 25.3167 55.9627 25.4807 55.9627 25.549C55.9627 25.631 55.9499 25.795 55.8991 25.795H53.2823C53.2441 25.795 53.2187 25.6584 53.2187 25.5627C53.2187 25.4671 53.2314 25.3167 53.2823 25.3167C53.8666 25.3167 53.892 24.9204 53.892 24.5105V21.5178C53.892 19.9053 53.4347 19.8507 53.0536 19.8507C52.4184 19.8507 52.2024 20.3699 52.0119 20.7525V24.5105C52.0119 24.9341 52.0627 25.3167 52.6598 25.3167C52.7106 25.3167 52.7233 25.508 52.7233 25.549C52.7233 25.6037 52.6979 25.795 52.6598 25.795H49.8777C49.8269 25.795 49.8015 25.6583 49.8015 25.549C49.8015 25.4671 49.8269 25.3168 49.8777 25.3167C50.6526 25.3167 50.7034 24.9068 50.7034 24.5105V20.5476C50.7034 20.0693 50.5764 19.7413 49.8777 19.7413C49.8269 19.7413 49.8015 19.6047 49.8015 19.4954C49.8015 19.3861 49.8269 19.2631 49.8777 19.2631H51.6308C51.8213 19.2631 51.9611 19.3314 51.9992 19.673C52.0119 19.7687 52.0754 19.796 52.1389 19.7276C52.3422 19.4817 52.6598 19.1264 53.2441 19.1264Z"></path>
           <path d="M48.0394 25.9621H46.8V24.629H48.0394V25.9621Z"></path>
         </svg>
-        <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-center text-center gap-6">
           <h1 className="max-w-xs text-2xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Ready for your first task
+            Bottom Drawer Demo
           </h1>
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+          >
+            Open Drawer
+          </button>
         </div>
       </main>
+
+      <BottomDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+      >
+        <div className="flex flex-col gap-6">
+          <h2 className="text-2xl font-bold text-black dark:text-white">
+            Drawer Content
+          </h2>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            This is a bottom drawer with snap behavior. You can:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-zinc-600 dark:text-zinc-400">
+            <li>Drag the handle or header to resize the drawer</li>
+            <li>Swipe up to snap to 80% or 100% height</li>
+            <li>Swipe down to snap to 50% height</li>
+            <li>Drag below 30% to close the drawer</li>
+            <li>Click the backdrop to close</li>
+          </ul>
+          <div className="space-y-4 pt-4">
+            <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 1</p>
+            </div>
+            <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 2</p>
+            </div>
+            <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 3</p>
+            </div>
+            <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 4</p>
+            </div>
+          </div>
+        </div>
+      </BottomDrawer>
     </div>
   );
 }
