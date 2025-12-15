@@ -67,7 +67,7 @@ export default function Home() {
             Drawer Content
           </h2>
           <p className="text-zinc-600 dark:text-zinc-400">
-            At 50% height (default), the handle is at the bottom and you can swipe up from the content area. Try scrolling horizontally below:
+            At 256px height (default), the handle is at the bottom and you can swipe up from the content area. Try scrolling horizontally below:
           </p>
           
           {/* Horizontally scrollable content */}
@@ -85,10 +85,10 @@ export default function Home() {
           </div>
 
           <div className="pt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            <p>• At 50% height: Handle at bottom, swipe up from content to expand</p>
-            <p>• At 80%/100% height: Handle at top, drag handle to adjust</p>
+            <p>• At 256px height: Handle at bottom, swipe up from content to expand</p>
+            <p>• At 80vh/100vh height: Handle at top, drag handle to adjust</p>
             <p>• Horizontal scrolling works independently of vertical dragging</p>
-            <p>• Click backdrop or drag below 30% to close</p>
+            <p>• Click backdrop or drag below 200px to close</p>
           </div>
 
           <div className="space-y-4 pt-4">

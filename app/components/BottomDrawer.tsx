@@ -13,7 +13,7 @@ export default function BottomDrawer({
   onClose,
   children,
 }: BottomDrawerProps) {
-  const [internalHeight, setInternalHeight] = useState(50);
+  const [internalHeightPx, setInternalHeightPx] = useState(256);
   const [isDragging, setIsDragging] = useState(false);
   const [gestureState, setGestureState] = useState<"unknown" | "vertical" | "horizontal">("unknown");
   const [isContentScrollable, setIsContentScrollable] = useState(true);
@@ -21,42 +21,46 @@ export default function BottomDrawer({
   const contentRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const startHeightRef = useRef(50);
+  const startHeightPxRef = useRef(256);
   const startScrollTopRef = useRef(0);
   const pointerIdRef = useRef<number | null>(null);
   
-  // Reset height to 50 when drawer is not open
-  const height = isOpen ? internalHeight : 50;
+  // Reset height to 256px when drawer is not open
+  const heightPx = isOpen ? internalHeightPx : 256;
 
-  // Snap points in percentage
-  const SNAP_POINTS = [50, 80, 100];
-  const CLOSE_THRESHOLD = 30;
-  const SNAP_THRESHOLD = 10;
+  // Snap points in pixels
+  const SNAP_POINT_1 = 256; // First snap point: 256px
+  const getSnapPoint2 = () => window.innerHeight * 0.8; // Second snap point: 80vh
+  const getSnapPoint3 = () => window.innerHeight; // Third snap point: 100vh
+  
+  const CLOSE_THRESHOLD_PX = 200; // Close if dragged below 200px
+  const SNAP_THRESHOLD_PX = 50; // Minimum distance in pixels to trigger snap
   const GESTURE_THRESHOLD = 10; // pixels to determine gesture direction
-  const FIRST_SNAP_POINT = SNAP_POINTS[0];
   
   // Check if we're at the first/default snap point
-  const isAtFirstSnapPoint = height === FIRST_SNAP_POINT;
+  const isAtFirstSnapPoint = Math.abs(heightPx - SNAP_POINT_1) < 10;
 
-  const getClosestSnapPoint = (currentHeight: number, direction: number) => {
-    if (currentHeight < CLOSE_THRESHOLD) {
+  const getClosestSnapPoint = (currentHeightPx: number, direction: number) => {
+    if (currentHeightPx < CLOSE_THRESHOLD_PX) {
       return null;
     }
 
+    const snapPoints = [SNAP_POINT_1, getSnapPoint2(), getSnapPoint3()];
+
     if (direction < 0) {
-      const lowerSnapPoints = SNAP_POINTS.filter((point) => point < currentHeight);
+      const lowerSnapPoints = snapPoints.filter((point) => point < currentHeightPx - 10);
       if (lowerSnapPoints.length > 0) {
         return lowerSnapPoints[lowerSnapPoints.length - 1];
       }
     } else if (direction > 0) {
-      const higherSnapPoints = SNAP_POINTS.filter((point) => point > currentHeight);
+      const higherSnapPoints = snapPoints.filter((point) => point > currentHeightPx + 10);
       if (higherSnapPoints.length > 0) {
         return higherSnapPoints[0];
       }
     }
 
-    return SNAP_POINTS.reduce((prev, curr) =>
-      Math.abs(curr - currentHeight) < Math.abs(prev - currentHeight)
+    return snapPoints.reduce((prev, curr) =>
+      Math.abs(curr - currentHeightPx) < Math.abs(prev - currentHeightPx)
         ? curr
         : prev
     );
@@ -73,7 +77,7 @@ export default function BottomDrawer({
       pointerIdRef.current = e.pointerId;
       startXRef.current = e.clientX;
       startYRef.current = e.clientY;
-      startHeightRef.current = height;
+      startHeightPxRef.current = heightPx;
       startScrollTopRef.current = contentRef.current?.scrollTop || 0;
       setGestureState("unknown");
       
@@ -94,7 +98,7 @@ export default function BottomDrawer({
       pointerIdRef.current = e.pointerId;
       startXRef.current = e.clientX;
       startYRef.current = e.clientY;
-      startHeightRef.current = height;
+      startHeightPxRef.current = heightPx;
       startScrollTopRef.current = currentScrollTop;
       setGestureState("unknown");
       
@@ -159,11 +163,9 @@ export default function BottomDrawer({
       if (invertedDeltaY < 0) return;
     }
 
-    const windowHeight = window.innerHeight;
-    const deltaPercentage = (invertedDeltaY / windowHeight) * 100;
-    const newHeight = Math.max(0, Math.min(100, startHeightRef.current + deltaPercentage));
+    const newHeightPx = Math.max(0, Math.min(window.innerHeight, startHeightPxRef.current + invertedDeltaY));
 
-    setInternalHeight(newHeight);
+    setInternalHeightPx(newHeightPx);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -187,19 +189,17 @@ export default function BottomDrawer({
     }
 
     const deltaY = startYRef.current - e.clientY;
-    const windowHeight = window.innerHeight;
-    const deltaPercentage = (deltaY / windowHeight) * 100;
-    const direction = Math.sign(deltaPercentage);
+    const direction = Math.sign(deltaY);
 
-    if (Math.abs(deltaPercentage) > SNAP_THRESHOLD) {
-      const snapPoint = getClosestSnapPoint(internalHeight, direction);
+    if (Math.abs(deltaY) > SNAP_THRESHOLD_PX) {
+      const snapPoint = getClosestSnapPoint(internalHeightPx, direction);
       if (snapPoint === null) {
         onClose();
       } else {
-        setInternalHeight(snapPoint);
+        setInternalHeightPx(snapPoint);
       }
     } else {
-      setInternalHeight(startHeightRef.current);
+      setInternalHeightPx(startHeightPxRef.current);
     }
 
     if (drawerRef.current) {
@@ -255,7 +255,7 @@ export default function BottomDrawer({
           isDragging ? "" : "transition-all duration-300 ease-out"
         }`}
         style={{
-          height: `${height}vh`,
+          height: `${heightPx}px`,
           touchAction: "none",
         }}
         onPointerDown={handlePointerDown}
