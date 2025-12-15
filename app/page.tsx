@@ -62,32 +62,47 @@ export default function Home() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 pt-6">
           <h2 className="text-2xl font-bold text-black dark:text-white">
             Drawer Content
           </h2>
           <p className="text-zinc-600 dark:text-zinc-400">
-            This is a bottom drawer with snap behavior. You can:
+            At 50% height (default), the handle is at the bottom and you can swipe up from the content area. Try scrolling horizontally below:
           </p>
-          <ul className="list-disc list-inside space-y-2 text-zinc-600 dark:text-zinc-400">
-            <li>Drag the handle or header to resize the drawer</li>
-            <li>Swipe up to snap to 80% or 100% height</li>
-            <li>Swipe down to snap to 50% height</li>
-            <li>Drag below 30% to close the drawer</li>
-            <li>Click the backdrop to close</li>
-          </ul>
+          
+          {/* Horizontally scrollable content */}
+          <div className="overflow-x-auto -mx-6 px-6">
+            <div className="flex gap-4 pb-4 min-w-max">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="w-40 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <p className="text-white font-semibold">Card {i}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
+            <p>• At 50% height: Handle at bottom, swipe up from content to expand</p>
+            <p>• At 80%/100% height: Handle at top, drag handle to adjust</p>
+            <p>• Horizontal scrolling works independently of vertical dragging</p>
+            <p>• Click backdrop or drag below 30% to close</p>
+          </div>
+
           <div className="space-y-4 pt-4">
             <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
-              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 1</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Vertical Content Block 1</p>
             </div>
             <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
-              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 2</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Vertical Content Block 2</p>
             </div>
             <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
-              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 3</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Vertical Content Block 3</p>
             </div>
             <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
-              <p className="text-zinc-500 dark:text-zinc-400">Sample Content Block 4</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Vertical Content Block 4</p>
             </div>
           </div>
         </div>
